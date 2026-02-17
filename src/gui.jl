@@ -119,10 +119,10 @@ function launch_gui(; port=8080)
         on(v -> algo_type[] = v, algo_dropdown.value)
 
         # Buttons
-        start_btn = Bonito.Button("Start"; style=Dict("background-color"=>"#4CAF50", "color"=>"white"))
-        stop_btn  = Bonito.Button("Stop"; style=Dict("background-color"=>"#f44336", "color"=>"white"))
+        start_btn = Bonito.Button("Start"; style=Bonito.Styles(Bonito.CSS("background-color" => "#4CAF50"), Bonito.CSS("color" => "white")))
+        stop_btn  = Bonito.Button("Stop"; style=Bonito.Styles(Bonito.CSS("background-color" => "#f44336"), Bonito.CSS("color" => "white")))
         reset_btn = Bonito.Button("Reset")
-        sweep_btn = Bonito.Button("Temperature Sweep"; style=Dict("background-color"=>"#2196F3", "color"=>"white"))
+        sweep_btn = Bonito.Button("Temperature Sweep"; style=Bonito.Styles(Bonito.CSS("background-color" => "#2196F3"), Bonito.CSS("color" => "white")))
 
         # Button Logic
         on(start_btn.value) do _
