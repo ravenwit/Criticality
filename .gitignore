@@ -1,0 +1,21 @@
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+*.ji
+*.ji.pidfile
+
+# Output
+res/
+graphs/
+data/
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+
+# Build
+build/
+manifest.toml
