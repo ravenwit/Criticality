@@ -96,13 +96,13 @@ function launch_gui(; port=8080)
         # -- Controls --
         
         # Lattices
-        lat_dropdown = Bonito.Dropdown(LATTICE_NAMES; default="Square")
+        lat_dropdown = Bonito.Dropdown(LATTICE_NAMES; index=1)
         on(v -> lattice_type[] = v, lat_dropdown.value)
         
         size_slider = Bonito.Slider(8:4:64; value=32)
         on(v -> lattice_size[] = Int(v), size_slider.value)
         
-        bc_dropdown = Bonito.Dropdown(["Periodic", "Open"]; default="Periodic")
+        bc_dropdown = Bonito.Dropdown(["Periodic", "Open"]; index=1)
         on(v -> bc_type[] = v, bc_dropdown.value)
 
         # Physics
@@ -115,7 +115,7 @@ function launch_gui(; port=8080)
         h_slider = Bonito.Slider(-2.0:0.1:2.0; value=0.0)
         on(v -> (field_h[] = v; current_model[] = IsingModel(coupling_J[], v)), h_slider.value)
 
-        algo_dropdown = Bonito.Dropdown(["Metropolis", "Wolff"]; default="Metropolis")
+        algo_dropdown = Bonito.Dropdown(["Metropolis", "Wolff"]; index=1)
         on(v -> algo_type[] = v, algo_dropdown.value)
 
         # Buttons
