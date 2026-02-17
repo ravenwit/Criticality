@@ -31,13 +31,9 @@ function launch_gui(; port=8080)
     mag_points       = Observable(Point2f[])
     spin_data        = Observable(zeros(Float32, 32, 32))
 
-    # Sweep results
-    sweep_T     = Observable(Float64[])
-    sweep_E     = Observable(Float64[])
-    sweep_absM  = Observable(Float64[])
-    sweep_Cv    = Observable(Float64[])
-    sweep_chi   = Observable(Float64[])
-    sweep_U4    = Observable(Float64[])
+    # Sweep results (Point2f for atomic x,y updates)
+    sweep_Cv_points  = Observable(Point2f[])
+    sweep_chi_points = Observable(Point2f[])
 
     # Analysis data
     autocorr_data   = Observable(Float64[])
@@ -202,7 +198,9 @@ function launch_gui(; port=8080)
                         
                         trange = range(T_start[], T_end[], length=30)
                         
-                        Ts, Es, aMs, Cvs, chis, U4s = Float64[], Float64[], Float64[], Float64[], Float64[], Float64[]
+                        # Reset sweep points
+                        sweep_Cv_points[] = Point2f[]
+                        sweep_chi_points[] = Point2f[]
                         
                         for T in trange
                             if !running[] break end
@@ -221,26 +219,17 @@ function launch_gui(; port=8080)
                                 m2_sum += m^2; m4_sum += m^4; am_sum += abs(m)
                             end
                             
-                            push!(Ts, T)
-                            push!(Es, e_sum/measure_steps)
-                            push!(aMs, am_sum/measure_steps)
-                            
                             e_avg = e_sum/measure_steps
                             e2_avg = e2_sum/measure_steps
                             cv = β^2 * N * (e2_avg - e_avg^2)
-                            push!(Cvs, cv)
                             
                             m2_avg = m2_sum/measure_steps
                             am_avg = am_sum/measure_steps
                             chi = β * N * (m2_avg - am_avg^2)
-                             push!(chis, chi)
-
-                            m4_avg = m4_sum / measure_steps
-                            u4 = m2_avg ≈ 0.0 ? 0.0 : 1.0 - m4_avg / (3.0 * m2_avg^2)
-                            push!(U4s, u4)
                             
-                            sweep_T[] = copy(Ts); sweep_E[] = copy(Es); sweep_absM[] = copy(aMs)
-                            sweep_Cv[] = copy(Cvs); sweep_chi[] = copy(chis); sweep_U4[] = copy(U4s)
+                            push!(sweep_Cv_points[], Point2f(T, cv))
+                            push!(sweep_chi_points[], Point2f(T, chi))
+                            notify(sweep_Cv_points); notify(sweep_chi_points)
                             
                             spin_data[] = Float32.(spin_matrix(lat))
                             status_text[] = "Sweep T=$T"
@@ -274,10 +263,10 @@ function launch_gui(; port=8080)
         lines!(ax_mag, mag_points, color=:orange)
         
         ax_cv = Axis(fig[3, 1], title="Specific Heat vs T")
-        scatterlines!(ax_cv, sweep_T, sweep_Cv, color=:red)
+        scatterlines!(ax_cv, sweep_Cv_points, color=:red)
         
         ax_chi = Axis(fig[3, 2], title="Susceptibility vs T")
-        scatterlines!(ax_chi, sweep_T, sweep_chi, color=:green)
+        scatterlines!(ax_chi, sweep_chi_points, color=:green)
         
         # Layout construction
         layout = Bonito.DOM.div(
