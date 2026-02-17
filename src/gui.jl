@@ -27,11 +27,10 @@ function launch_gui(; port=8080)
     current_model = Observable(IsingModel(1.0, 0.0))
 
     # Live data (Observables for plotting)
+    energy_points    = Observable(Point2f[])
+    mag_points       = Observable(Point2f[])
     spin_data        = Observable(zeros(Float32, 32, 32))
-    energy_history   = Observable(Float64[])
-    mag_history      = Observable(Float64[])
-    step_indices     = Observable(Int[])
-    
+
     # Sweep results
     sweep_T     = Observable(Float64[])
     sweep_E     = Observable(Float64[])
@@ -64,15 +63,15 @@ function launch_gui(; port=8080)
         current_model[] = IsingModel(coupling_J[], field_h[])
         
         # Reset histories
-        energy_history[] = Float64[]
-        mag_history[] = Float64[]
-        step_indices[] = Int[]
+        energy_points[] = Point2f[]
+        mag_points[] = Point2f[]
         
         spin_data[] = Float32.(spin_matrix(lat))
     end
 
     function update_analysis!()
-        e_hist = energy_history[]
+        # Extract energy values from points (y-coordinate)
+        e_hist = [p[2] for p in energy_points[]]
         if length(e_hist) > 20
             ac = autocorrelation(e_hist; max_lag=min(200, length(e_hist) ÷ 4))
             autocorr_data[] = ac
@@ -145,17 +144,16 @@ function launch_gui(; port=8080)
                             if step % 5 == 0
                                 e = energy_per_spin(mod, lat)
                                 m = magnetization_per_spin(lat)
-                                push!(energy_history[], e)
-                                push!(mag_history[], m)
-                                push!(step_indices[], step)
                                 
-                                if length(energy_history[]) > 1000
-                                    deleteat!(energy_history[], 1:100)
-                                    deleteat!(mag_history[], 1:100)
-                                    deleteat!(step_indices[], 1:100)
+                                push!(energy_points[], Point2f(step, e))
+                                push!(mag_points[], Point2f(step, m))
+                                
+                                if length(energy_points[]) > 1000
+                                    deleteat!(energy_points[], 1:100)
+                                    deleteat!(mag_points[], 1:100)
                                 end
                                 
-                                notify(energy_history); notify(mag_history); notify(step_indices)
+                                notify(energy_points); notify(mag_points)
                                 spin_data[] = Float32.(spin_matrix(lat))
                                 
                                 if step % 50 == 0
@@ -185,6 +183,10 @@ function launch_gui(; port=8080)
         end
 
         on(sweep_btn.value) do _
+            # ... (Sweep existing code is fine as it uses local arrays, but we check if it references energy_history)
+            # Sweep logic is separate. We just copy existing logic or assume it is safe unless it used energy_history.
+            # The previous code for sweep_btn (lines 187-254) uses its own buffers.
+            # I will include it here to be safe and ensure it is not cut off by replace_file_content chunking issues
             if !running[]
                 running[] = true
                 sweep_mode[] = true
@@ -266,10 +268,10 @@ function launch_gui(; port=8080)
         heatmap!(ax_spin, spin_data, colormap=:RdBu, colorrange=(-1, 1))
         
         ax_en = Axis(fig[2, 1], title="Energy", xlabel="Step")
-        lines!(ax_en, step_indices, energy_history, color=:cyan)
+        lines!(ax_en, energy_points, color=:cyan)
         
         ax_mag = Axis(fig[2, 2], title="Magnetization", xlabel="Step")
-        lines!(ax_mag, step_indices, mag_history, color=:orange)
+        lines!(ax_mag, mag_points, color=:orange)
         
         ax_cv = Axis(fig[3, 1], title="Specific Heat vs T")
         scatterlines!(ax_cv, sweep_T, sweep_Cv, color=:red)
